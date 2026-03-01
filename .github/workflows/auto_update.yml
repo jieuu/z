@@ -1,0 +1,26 @@
+name: 自动更新直播源
+on:
+  schedule:
+    - cron: '0 22 * * *' # 每天北京时间早上6点运行
+  workflow_dispatch:      # 允许你手动点击运行测试
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v3
+
+      - name: 安装环境
+        run: pip install requests
+
+      - name: 执行去重更新脚本
+        run: python update.py
+
+      - name: 自动保存更新
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add z.m3u
+          git commit -m "Auto Update with deduplication" || exit 0
+          git push
