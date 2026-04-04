@@ -17,7 +17,7 @@ exports.handler = async (event) => {
     };
     const m3uText = await m3uRes.text();
     
-    // 你的Netlify项目地址（已填好，不用改）
+    // ✅ 关键修复：给 proxyBase 赋值你的 Netlify 项目地址
     const proxyBase = "https://famous-babka-c8047b.netlify.app";
     // 扩大匹配范围，确保所有港台源都被命中
     const needProxy = [
@@ -69,6 +69,9 @@ exports.handler = async (event) => {
   // 2. 反代单个直播流（核心修复：完整透传请求，处理相对路径分片）
   const targetUrl = decodeURIComponent(url);
   const target = new URL(targetUrl);
+  
+  // ✅ 关键修复：这里也给 proxyBase 赋值，避免未定义报错
+  const proxyBase = "https://famous-babka-c8047b.netlify.app";
   
   const res = await fetch(targetUrl, {
     method: event.httpMethod,
