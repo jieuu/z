@@ -2,24 +2,33 @@ export default {
   async fetch(request) {
     try {
       const M3U_URL = "https://raw.githubusercontent.com/jieuu/z/main/z.txt";
-
       const url = new URL(request.url);
       const targetUrl = url.searchParams.get("url");
 
-      // 反代播放地址
+      // 反代播放地址：补全完整请求头，绕过源站防盗链
       if (targetUrl) {
+        const target = new URL(targetUrl);
         const res = await fetch(targetUrl, {
+          method: request.method,
           headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+            "Accept": "*/*",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+            "Referer": target.origin,
+            "Origin": target.origin,
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache"
           },
-          cf: { cacheTtl: 0 }
+          cf: { cacheTtl: 0, cacheEverything: false }
         });
+
         return new Response(res.body, {
           status: res.status,
           headers: {
             ...Object.fromEntries(res.headers),
             "Access-Control-Allow-Origin": "*",
-            "Cache-Control": "no-cache"
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "X-Content-Type-Options": "nosniff"
           }
         });
       }
@@ -28,7 +37,7 @@ export default {
       if (url.pathname === "/live" || url.pathname === "/live.txt") {
         const res = await fetch(M3U_URL, {
           headers: {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
           }
         });
         if (!res.ok) return new Response("获取源失败", { status: 500 });
@@ -56,7 +65,7 @@ export default {
         return new Response(lines.join("\n"), {
           headers: {
             "Content-Type": "text/plain; charset=utf-8",
-            "Cache-Control": "no-cache",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
             "Access-Control-Allow-Origin": "*"
           }
         });
