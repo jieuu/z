@@ -1,45 +1,60 @@
 export default {
-  async fetch(request, env) {
+  async fetch(request) {
     const url = new URL(request.url);
-    const host = "https://z-52q.pages.dev"; 
-    // 直接抓取你仓库里的文件
-    const githubUrl = "https://raw.githubusercontent.com/jieuu/z/main/z.txt";
+    // 这里会自动获取你当前的 Pages 域名 (例如 https://z-52q.pages.dev)
+    const host = url.origin; 
 
-    // 1. 处理反代流请求（当链接里包含 ?url= 时）
+    // --- 核心功能 1：中转直播流 ---
+    // 如果请求链接里带有 ?url=，说明这是播放器发来的反代请求，直接转发
     const targetUrl = url.searchParams.get("url");
     if (targetUrl) {
-      return fetch(targetUrl, {
-        headers: { "User-Agent": "Mozilla/5.0" }
-      });
+      return fetch(new Request(targetUrl, {
+        headers: request.headers,
+        method: request.method,
+        redirect: 'follow'
+      }));
     }
 
-    // 2. 处理列表请求（直接访问域名）
+    // --- 核心功能 2：生成并过滤直播列表 ---
     try {
+      // 获取你仓库里的原始 z.txt
+      const githubUrl = "https://raw.githubusercontent.com/jieuu/z/main/z.txt";
       const response = await fetch(githubUrl);
-      const content = await response.text();
+      const text = await response.text();
 
-      // 定义需要反代的港澳台/境外关键词
-      const proxyKeywords = ["74.91.26", "107.150.60", "38.75.136", "163189", "phoenix", "pts", "ttv"];
+      // 需要走反代中转的关键词（境外 IP 或域名）
+      const proxyKeywords = [
+        "74.91.26", "107.150.60", "38.75.136", "163189", 
+        "phoenix", "pts", "ttv", "cts", "hks", "hkstv"
+      ];
 
-      const lines = content.split('\n');
-      const newLines = lines.map(line => {
-        const trimmed = line.trim();
-        if (trimmed.startsWith("http")) {
-          // 只有匹配到关键词的频道才加反代前缀
-          const needsProxy = proxyKeywords.some(key => trimmed.includes(key));
+      // 逐行扫描文件内容
+      const lines = text.split('\n');
+      const processedLines = lines.map(line => {
+        let currentLine = line.trim();
+        // 发现频道链接
+        if (currentLine.startsWith("http")) {
+          // 检查是否包含境外关键词
+          const needsProxy = proxyKeywords.some(keyword => currentLine.includes(keyword));
           if (needsProxy) {
-            return `${host}/?url=${encodeURIComponent(trimmed)}`;
+            // 给境外频道穿上反代外套
+            return `${host}/?url=${encodeURIComponent(currentLine)}`;
           }
         }
-        return trimmed;
+        // 国内频道或其他文本保持原样
+        return currentLine;
       });
 
-      return new Response(newLines.join('\n'), {
-        headers: { "Content-Type": "text/plain; charset=utf-8" }
+      // 把处理好的列表返回给播放器
+      return new Response(processedLines.join('\n'), {
+        headers: {
+          "Content-Type": "text/plain; charset=utf-8",
+          "Access-Control-Allow-Origin": "*"
+        }
       });
 
-    } catch (e) {
-      return new Response("抓取失败: " + e.message);
+    } catch (error) {
+      return new Response("抓取列表失败，请检查 GitHub 地址。错误信息: " + error.message, { status: 500 });
     }
   }
 };
