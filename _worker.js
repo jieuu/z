@@ -34,7 +34,7 @@ export default {
         if (!res.ok) return new Response("获取源失败", { status: 500 });
 
         let text = await res.text();
-        const proxy = "https://z-9wz.pages.dev";
+        const proxy = "https://a-6ce.pages.dev";
         const needProxy = [
           "163189", "phoenix", "ifeng", "fhzw", "jdshipin", "kkhk",
           "74.91.26", "rihou", "hkstv", "one-tv", "eztv"
