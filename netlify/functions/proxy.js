@@ -7,7 +7,7 @@ exports.handler = async (event) => {
     const m3uText = await m3uRes.text();
     
     // 替换成你的 Netlify 项目地址（部署后会自动生成，比如 https://z-jieuu.netlify.app）
-    const proxyBase = netlifyUrl; 
+    const proxyBase = "https://famous-babka-c8047b.netlify.app";
     const needProxy = [
       "163189", "phoenix", "ifeng", "fhzw", "jdshipin", "kkhk",
       "74.91.26", "rihou", "hkstv", "one-tv", "eztv"
